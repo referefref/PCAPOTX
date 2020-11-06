@@ -1,0 +1,53 @@
+#!/bin/bash
+# Put your OTX key here
+otxkey=""
+
+if [ "$#" -lt 1 ]; then
+	programName=$(echo $0 | sed -e 's/.*\///g')
+	echo "_________________________________________"
+	echo "\   PCAP OTX Malicious Host Detector    /"
+	echo ",\_____________________________________/."
+	echo "|   James Brine | Updated: 06/08/2020   |"
+	echo "._----=============================----_,"
+	echo "Usage: ${programName} pcapfile"
+        echo "Example: ${programName} suspicious.pcap" >&2; exit 1
+fi
+
+if [ "$#" -eq 1 ]; then
+	# if input is file
+	if [[ "$1" == *".pcap"* ]]
+	then
+		echo $1 > filesToTest
+	fi
+fi	
+
+while read source; do
+	outputfile=$(echo "${source}.results")
+	# source and destination
+	echo "Getting hosts..."
+	tshark -q -r $source -z ip_hosts,tree > out
+	echo "Removing internal hosts..."
+	sed -i -e '/10.*/d' out
+	sed -i -e '/192.*/d' out
+	sed -i -e '/172.16.*/d' out
+	tail -n +6 out > newout
+	rm out
+	echo "-============== Malicious IP Results for ${filename} ===============-" > $outputfile
+	echo " Count:                    IP:" >> $outputfile
+	echo "Checking results against OTX for known malicious hosts..."
+	while read line; do
+		ip=$(echo $line | awk -F' ' '{print $1}')
+		count=$(echo $line | awk -F' ' '{print $2}')
+
+		isMalicious=$(curl -s https://otx.alienvault.com/api/v1/indicators/IPv4/$ip/reputation -H "X-OTX-API-KEY: ${otxkey}" | awk -F'Malicious Host": ' '{print $2}' | awk -F'},' '{print $1}')
+
+		if [ "$isMalicious" == "1" ]
+		then
+			echo "${count}     :       ${ip}" >> $outputfile
+		fi
+	done < newout
+	rm newout
+done < filesToTest
+
+# cleanup
+rm filesToTest
