@@ -1,2 +1,5 @@
 # PCAPOTX
-Search OTX for IoCs that exist within PCAP
+Simple bash script to search OTX for IoCs that exist within specified PCAP file
+
+# How to use?
+Example: ./pcapotx suspicious.pcap
