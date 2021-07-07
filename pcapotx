@@ -27,9 +27,7 @@ while read source; do
 	echo "Getting hosts..."
 	tshark -q -r $source -z ip_hosts,tree > out
 	echo "Removing internal hosts..."
-	sed -i -e '/10.*/d' out
-	sed -i -e '/192.*/d' out
-	sed -i -e '/172.16.*/d' out
+	sed -i -e '/10.*/d; /192.168.*/d; 172.16.*/d' out
 	tail -n +6 out > newout
 	rm out
 	echo "-============== Malicious IP Results for ${filename} ===============-" > $outputfile
